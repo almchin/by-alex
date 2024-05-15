@@ -1,7 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { getStorage, ref, getDownloadURL } from "firebase/storage";
+  import { getStorage, ref, getDownloadURL } from 'firebase/storage';
   import { app } from "../../firebase"; // Ensure this path is correct
+  import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+  import { user } from '../../stores/auth';
+  import type { User } from 'firebase/auth';
+
+  let currentUser: User | null = null;
+  $: currentUser = $user;
 
   export let isOpen: boolean = false;
   export let src: string = '';
@@ -32,7 +38,19 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      console.log('Download triggered for:', downloadURL); // Log for debugging
+
+      // Record download history
+      if (currentUser) {
+        const db = getFirestore(app);
+        const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'downloads'), {
+          url: downloadURL,
+          timestamp: serverTimestamp(),
+          userID: currentUser.uid
+        });
+        console.log('Document written with ID: ', docRef.id);
+      }
+
+      console.log('Download triggered for:', downloadURL);
     } catch (error) {
       console.error('Error downloading the image:', error);
     }
