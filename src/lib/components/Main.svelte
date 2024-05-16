@@ -137,6 +137,10 @@
       ...getAllImages(folder.subfolders)
     ]);
   };
+
+  const generateId = (name: string): string => {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  };
 </script>
 
 <main class="pt-24 lg mt-[10px]:w-1/2 lg mt-[10px]:py-24">
@@ -148,7 +152,7 @@
     <div class="text-center text-gray-500">Please log in to view photos</div>
   {:else}
     {#each folders as folder}
-      <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
+      <div id={generateId(folder.name)} class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
         <input type="checkbox" />
         <div class="collapse-title text-xl font-medium">
           {folder.name}
