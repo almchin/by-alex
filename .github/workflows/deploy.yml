@@ -28,7 +28,7 @@ jobs:
 
       - name: build
         env:
-          BASE_PATH: '/by-alex'
+          BASE_PATH: '/${{ by-alex }}'
         run: |
           npm run build
 
