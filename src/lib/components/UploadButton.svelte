@@ -23,11 +23,17 @@
     }
   };
 
-  const fetchEventFolders = async () => {
+  const fetchEventFolders = async (folderPath: string = 'uploads/') => {
     try {
-      const storageRef = ref(storage, 'uploads/');
+      const storageRef = ref(storage, folderPath);
       const result = await listAll(storageRef);
-      eventFolders.set(result.prefixes.map(folder => folder.fullPath));
+
+      const folders = result.prefixes.map(folder => folder.fullPath.replace('uploads/', ''));
+      eventFolders.update(current => [...current, ...folders]);
+
+      for (const folder of result.prefixes) {
+        await fetchEventFolders(folder.fullPath);
+      }
     } catch (error) {
       console.error('Error fetching event folders:', error);
     }
@@ -102,7 +108,7 @@
 
 {#if $isAuthorized}
   <div class="flex flex-col items-start w-full">
-    <select bind:value={$selectedEvent} class="select select-bordered mt-2 w-full">
+    <select bind:value={$selectedEvent} class="select select-bordered mt-2 w-full mb-[15px]">
       <option value="" disabled selected>Select an event</option>
       {#each $eventFolders as folder}
         <option value={folder}>{folder}</option>

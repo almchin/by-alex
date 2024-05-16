@@ -5,7 +5,6 @@
   import Modal from './Modal.svelte';
   import { user } from '../../stores/auth';
   import type { User } from 'firebase/auth';
-  import 'daisyui/dist/full.css'; // Ensure DaisyUI is imported
 
   type Image = {
     name: string;
@@ -28,6 +27,13 @@
   let loading: boolean = true;
 
   $: currentUser = $user;
+
+  const customOrder = [
+    "EHS Men's Volleyball 2024",
+    "EHS Women's Volleyball 2023 Senior Night",
+    "Portugal 2023",
+    "EHS Men's Volleyball 2023"
+  ];
 
   const fetchFolderContents = async (folderPath: string): Promise<Folder> => {
     const folderRef = ref(storage, folderPath);
@@ -58,6 +64,22 @@
     try {
       const rootFolder = await fetchFolderContents('uploads/');
       folders = rootFolder.subfolders;
+
+      // Apply custom sorting
+      folders.sort((a, b) => {
+        const indexA = customOrder.indexOf(a.name);
+        const indexB = customOrder.indexOf(b.name);
+
+        if (indexA === -1 && indexB === -1) {
+          return a.name.localeCompare(b.name); // Default alphabetical sorting
+        } else if (indexA === -1) {
+          return 1; // Place items not in customOrder after those in customOrder
+        } else if (indexB === -1) {
+          return -1; // Place items not in customOrder after those in customOrder
+        } else {
+          return indexA - indexB; // Custom sorting order
+        }
+      });
     } catch (err: any) {
       error = err.message || 'An error occurred while fetching images';
       console.error('Error fetching images:', err);
@@ -115,35 +137,6 @@
       ...getAllImages(folder.subfolders)
     ]);
   };
-
-  const renderFolder = (folder: Folder): any => {
-    return `
-      <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
-        <input type="checkbox" />
-        <div class="collapse-title text-xl font-medium">
-          ${folder.name}
-        </div>
-        <div class="collapse-content">
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            ${folder.images.map(image => `
-              <div class="relative p-2">
-                <div class="w-[150px] h-[150px]">
-                  <button on:click="openModal('${image.url}')" class="w-full h-full">
-                    <img
-                      src="${image.url}"
-                      alt="${image.name}"
-                      class="w-full h-full object-cover rounded-lg cursor-pointer"
-                    />
-                  </button>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-          ${folder.subfolders.map(subfolder => renderFolder(subfolder)).join('')}
-        </div>
-      </div>
-    `;
-  };
 </script>
 
 <main class="pt-24 lg mt-[10px]:w-1/2 lg mt-[10px]:py-24">
@@ -155,7 +148,107 @@
     <div class="text-center text-gray-500">Please log in to view photos</div>
   {:else}
     {#each folders as folder}
-      {@html renderFolder(folder)}
+      <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
+        <input type="checkbox" />
+        <div class="collapse-title text-xl font-medium">
+          {folder.name}
+        </div>
+        <div class="collapse-content">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {#each folder.images as image}
+              <div class="relative p-2">
+                <div class="w-[150px] h-[150px]">
+                  <button on:click={() => openModal(image.url)} class="w-full h-full">
+                    <img
+                      src={image.url}
+                      alt={image.name}
+                      class="w-full h-full object-cover rounded-lg cursor-pointer"
+                    />
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+          {#each folder.subfolders as subfolder}
+            <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
+              <input type="checkbox" />
+              <div class="collapse-title text-lg font-medium">
+                {subfolder.name}
+              </div>
+              <div class="collapse-content">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {#each subfolder.images as image}
+                    <div class="relative p-2">
+                      <div class="w-[150px] h-[150px]">
+                        <button on:click={() => openModal(image.url)} class="w-full h-full">
+                          <img
+                            src={image.url}
+                            alt={image.name}
+                            class="w-full h-full object-cover rounded-lg cursor-pointer"
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  {/each}
+                  {#each subfolder.subfolders as subSubfolder}
+                    <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
+                      <input type="checkbox" />
+                      <div class="collapse-title text-md font-medium">
+                        {subSubfolder.name}
+                      </div>
+                      <div class="collapse-content">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          {#each subSubfolder.images as image}
+                            <div class="relative p-2">
+                              <div class="w-[150px] h-[150px]">
+                                <button on:click={() => openModal(image.url)} class="w-full h-full">
+                                  <img
+                                    src={image.url}
+                                    alt={image.name}
+                                    class="w-full h-full object-cover rounded-lg cursor-pointer"
+                                  />
+                                </button>
+                              </div>
+                            </div>
+                          {/each}
+                          {#each subSubfolder.subfolders as subSubSubfolder}
+                            <div class="collapse collapse-arrow border border-base-300 bg-base-100 rounded-box mb-4">
+                              <input type="checkbox" />
+                              <div class="collapse-title text-sm font-medium">
+                                {subSubSubfolder.name}
+                              </div>
+                              <div class="collapse-content">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                  {#each subSubSubfolder.images as image}
+                                    <div class="relative p-2">
+                                      <div class="w-[150px] h-[150px]">
+                                        <button on:click={() => openModal(image.url)} class="w-full h-full">
+                                          <img
+                                            src={image.url}
+                                            alt={image.name}
+                                            class="w-full h-full object-cover rounded-lg cursor-pointer"
+                                          />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  {/each}
+                                  {#each subSubSubfolder.subfolders as subSubSubSubfolder}
+                                    <!-- Add additional nested folders here -->
+                                  {/each}
+                                </div>
+                              </div>
+                            </div>
+                          {/each}
+                        </div>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
     {/each}
     <Modal 
       isOpen={isModalOpen} 

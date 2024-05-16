@@ -40,10 +40,10 @@
       <p class="mt-4 max-w-xs leading-normal text-slate-400">Amateur Developer and Photographer<br/><br/>Last seen working with: <a href="https://instagram.com/ehsmensvball" class="text-slate-300 hover:underline" target="_blank">@ehsmensvball</a> on Instagram</p>
       <nav class="nav hidden lg:block" aria-label="In-page jump links">
         <ul class="mt-[20px] w-max">
-          <li><a class="group flex items-center py-2" href="#mvb23"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">EHS Men's Volleyball 2023</span></a></li>
-          <li><a class="group flex items-center py-2" href="#portugal"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">Portugal 2023</span></a></li>
-          <li><a class="group flex items-center py-2" href="#wvbsnr23"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">EHS Women's Volleyball 2023 Senior Night</span></a></li>
           <li><a class="group flex items-center py-2" href="#mvb24"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">EHS Men's Volleyball 2024</span></a></li>
+          <li><a class="group flex items-center py-2" href="#wvbsnr23"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">EHS Women's Volleyball 2023 Senior Night</span></a></li>
+          <li><a class="group flex items-center py-2" href="#portugal"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">Portugal 2023</span></a></li>
+          <li><a class="group flex items-center py-2" href="#mvb23"><span class="nav-text text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-200 group-focus-visible:text-slate-200">EHS Men's Volleyball 2023</span></a></li>
         </ul>
       </nav>
     </div>
