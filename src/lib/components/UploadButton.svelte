@@ -1,89 +1,159 @@
 <script lang="ts">
-    import { auth, storage } from '../../firebase';
-    import { ref, uploadBytes } from 'firebase/storage';
-    import { onAuthStateChanged } from 'firebase/auth';
-    import { writable } from 'svelte/store';
-    import type { User } from 'firebase/auth';
-  
-    let files: File[] = [];
-    let fileNames: string[] = [];
-    let isAuthorized = writable(false);
-  
-    const checkAuthorization = (user: User | null) => {
-      if (user && user.uid === 'pNKSn7tIE3PV62QlijprM546luj1') {
-        isAuthorized.set(true);
-      } else {
-        isAuthorized.set(false);
-      }
-    };
-  
-    onAuthStateChanged(auth, (user) => {
-      checkAuthorization(user);
-    });
-  
-    const handleFileChange = (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      if (target.files) {
-        files = Array.from(target.files);
-        fileNames = files.map(file => file.name); // Update fileNames array with selected file names
-      }
-    };
-  
-    const uploadFiles = async () => {
-      const uploadPromises = files.map(file => {
-        const storageRef = ref(storage, 'uploads/' + file.name);
-        return uploadBytes(storageRef, file);
+  import { auth, storage } from '../../firebase';
+  import { ref, uploadBytesResumable, listAll } from 'firebase/storage';
+  import { onAuthStateChanged } from 'firebase/auth';
+  import { writable } from 'svelte/store';
+  import type { User } from 'firebase/auth';
+
+  let files: File[] = [];
+  let fileNames: string[] = [];
+  let isAuthorized = writable(false);
+  let currentUser: User | null = null;
+  let totalProgress = writable<number>(0);
+  let eventFolders = writable<string[]>([]);
+  let selectedEvent = writable<string | null>(null);
+
+  const checkAuthorization = (user: User | null) => {
+    if (user && user.uid === 'pNKSn7tIE3PV62QlijprM546luj1') {
+      isAuthorized.set(true);
+      currentUser = user;
+      fetchEventFolders();
+    } else {
+      isAuthorized.set(false);
+    }
+  };
+
+  const fetchEventFolders = async () => {
+    try {
+      const storageRef = ref(storage, 'uploads/');
+      const result = await listAll(storageRef);
+      eventFolders.set(result.prefixes.map(folder => folder.fullPath));
+    } catch (error) {
+      console.error('Error fetching event folders:', error);
+    }
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    checkAuthorization(user);
+  });
+
+  const handleFileChange = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.files) {
+      files = Array.from(target.files);
+      fileNames = files.map(file => file.name);
+      totalProgress.set(0);
+    }
+  };
+
+  const uploadFiles = async () => {
+    if (!currentUser) {
+      alert('User not authorized to upload files.');
+      return;
+    }
+
+    if (!$selectedEvent) {
+      alert('Please select an event folder.');
+      return;
+    }
+
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    let bytesTransferred = 0;
+
+    const uploadPromises = files.map((file) => {
+      const storageRef = ref(storage, `uploads/${$selectedEvent}/${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      return new Promise<void>((resolve, reject) => {
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            bytesTransferred += snapshot.bytesTransferred - (bytesTransferred / files.length);
+            const progress = (bytesTransferred / totalBytes) * 100;
+            totalProgress.set(progress);
+          },
+          (error) => {
+            console.error('Error uploading file:', error);
+            reject(error);
+          },
+          () => {
+            resolve();
+          }
+        );
       });
-  
-      try {
-        await Promise.all(uploadPromises);
-        alert('Files uploaded successfully!');
-        fileNames = []; // Clear fileNames after upload
-        files = [];     // Clear files after upload
-      } catch (error) {
-        console.error('Error uploading files:', error);
-        alert('Failed to upload files.');
-      }
-    };
-  
-    const triggerFileInput = () => {
-      document.getElementById('fileInput')?.click();
-    };
-  </script>
-  
-  {#if $isAuthorized}
-    <div class="flex flex-col items-start">
-      <input
-        id="fileInput"
-        type="file"
-        multiple
-        on:change={handleFileChange}
-        class="hidden"
-      />
+    });
+
+    try {
+      await Promise.all(uploadPromises);
+      alert('Files uploaded successfully!');
+      fileNames = [];
+      files = [];
+      totalProgress.set(0);
+      location.reload(); // Refresh the page to show the newly uploaded files
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert('Failed to upload files.');
+    }
+  };
+
+  const triggerFileInput = () => {
+    document.getElementById('fileInput')?.click();
+  };
+</script>
+
+{#if $isAuthorized}
+  <div class="flex flex-col items-start w-full">
+    <select bind:value={$selectedEvent} class="select select-bordered mt-2 w-full">
+      <option value="" disabled selected>Select an event</option>
+      {#each $eventFolders as folder}
+        <option value={folder}>{folder}</option>
+      {/each}
+    </select>
+    <input
+      id="fileInput"
+      type="file"
+      multiple
+      on:change={handleFileChange}
+      class="hidden"
+    />
+    <div class="flex space-x-4 mt-2 w-full">
       <button
         type="button"
         on:click={triggerFileInput}
-        class="mt-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
       >
         Choose Files
       </button>
       {#if fileNames.length > 0}
-        <div class="mt-2 text-gray-700">
-          <p>Selected files:</p>
-          <ul>
-            {#each fileNames as fileName}
-              <li>{fileName}</li>
-            {/each}
-          </ul>
-        </div>
         <button
           type="button"
           on:click={uploadFiles}
-          class="mt-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+          class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
         >
           Upload
         </button>
       {/if}
     </div>
-  {/if}
-  
+    {#if fileNames.length > 0}
+      <div class="mt-2 text-gray-700 w-full">
+        <p>Selected files:</p>
+        <ul>
+          {#each fileNames as fileName}
+            <li>{fileName}</li>
+          {/each}
+        </ul>
+        <div class="w-full bg-gray-200 rounded mt-2 h-4">
+          <div 
+            class="bg-blue-500 text-xs leading-none h-full rounded progress-bar"
+            style="width: {$totalProgress}%">
+          </div>
+        </div>
+      </div>
+    {/if}
+  </div>
+{/if}
+
+<style>
+  .progress-bar {
+    background-color: #3b82f6; /* Tailwind blue-500 */
+  }
+</style>

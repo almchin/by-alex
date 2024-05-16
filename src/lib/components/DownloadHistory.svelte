@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { getFirestore, collection, query, where, getDocs, type DocumentData } from 'firebase/firestore';
-    import { app } from '../../firebase'; // Ensure this path is correct
+    import { app, auth } from '../../firebase'; // Ensure this path is correct
     import type { User } from 'firebase/auth';
     import { user } from '../../stores/auth';
     import Modal from './Modal.svelte';
@@ -13,6 +13,7 @@
     let isModalOpen = false;
     let modalSrc = '';
     let currentIndex = 0;
+    let loading = true; // Add a loading state
   
     const fetchDownloadHistory = async (userId: string) => {
       const db = getFirestore(app);
@@ -23,14 +24,19 @@
       const querySnapshot = await getDocs(q);
       console.log('Query Snapshot:', querySnapshot);
       downloads = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      loading = false; // Set loading to false after fetching data
     };
   
     onMount(() => {
-      if (currentUser) {
-        fetchDownloadHistory(currentUser.uid).catch(err => {
-          console.error('Error fetching download history:', err);
-        });
-      }
+      const unsubscribe = user.subscribe(async (u) => {
+        if (u) {
+          await fetchDownloadHistory(u.uid).catch(err => {
+            console.error('Error fetching download history:', err);
+          });
+        }
+      });
+  
+      return () => unsubscribe(); // Cleanup the subscription
     });
   
     const openModal = (src: string, index: number) => {
@@ -63,7 +69,9 @@
     <section id="download-history" class="mb-16 scroll-mt-16 md:mb-24 lg:mt-[10px]:mb-36 lg:scroll-mt-24">
       <h1 class="text-4xl font-bold tracking-tight text-slate-200 sm:text-5xl mb-8">Download History</h1>
       {#if currentUser}
-        {#if downloads.length > 0}
+        {#if loading}
+          <p>Loading...</p>
+        {:else if downloads.length > 0}
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {#each downloads as download, index}
               <div>

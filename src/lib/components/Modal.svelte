@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { getStorage, ref, getDownloadURL } from 'firebase/storage';
-  import { app } from "../../firebase"; // Ensure this path is correct
+  import { app } from "../../firebase";
   import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
   import { user } from '../../stores/auth';
   import type { User } from 'firebase/auth';
@@ -23,17 +23,13 @@
 
   const downloadImage = async (url: string) => {
     try {
-      const storage = getStorage(app);
-      const imageRef = ref(storage, url);
-      const downloadURL = await getDownloadURL(imageRef);
-
-      const response = await fetch(downloadURL, { mode: 'cors' });
+      const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = url.split('/').pop() || 'download';
+      link.download = url.split('/').pop()?.split('?')[0] || 'download'; // Remove query parameters from filename
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -43,14 +39,14 @@
       if (currentUser) {
         const db = getFirestore(app);
         const docRef = await addDoc(collection(db, 'users', currentUser.uid, 'downloads'), {
-          url: downloadURL,
+          url: url,
           timestamp: serverTimestamp(),
           userID: currentUser.uid
         });
         console.log('Document written with ID: ', docRef.id);
       }
 
-      console.log('Download triggered for:', downloadURL);
+      console.log('Download triggered for:', url);
     } catch (error) {
       console.error('Error downloading the image:', error);
     }
@@ -96,33 +92,32 @@
     on:keydown={handleBackgroundKeydown}
     aria-label="Close modal"
   >
-    <button on:click={closeModal} class="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2 z-10">
-      Close
-    </button>
-    {#if !isFirst}
-      <button on:click={onPrev} class="absolute left-4 text-white bg-black bg-opacity-50 rounded-full p-2 z-10">
-        &lt;
-      </button>
-    {/if}
-    <div class="relative bg-white p-4 rounded-lg w-[50vw] h-[50vh] max-w-[50vw] max-h-[50vh]" on:click|stopPropagation>
-      <img src={src} alt="Full view" class="w-full h-full object-contain" />
+    <div class="absolute top-4 right-4 flex space-x-2 z-10">
       <button
-        class="absolute bottom-4 right-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         on:click={() => downloadImage(src)}
+        class="bg-[#e6e6e6] hover:bg-[#b8b8b8] text-black font-bold py-2 px-5 rounded mr-[10px]"
       >
-        Download
+      <i class="fa-solid fa-download"></i>
+      </button>
+      <button on:click={closeModal} class="text-white bg-black bg-opacity-50 rounded-full p-2">
+        <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
+    {#if !isFirst}
+      <button on:click={onPrev} class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 z-10">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+    {/if}
+    <img src={src} alt="Full view" class="max-w-[70vw] max-h-[70vh] object-contain shadow-lg" on:click|stopPropagation />
     {#if !isLast}
-      <button on:click={onNext} class="absolute right-4 text-white bg-black bg-opacity-50 rounded-full p-2 z-10">
-        &gt;
+      <button on:click={onNext} class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-black bg-opacity-50 rounded-full p-2 z-10">
+        <i class="fa-solid fa-arrow-right"></i>
       </button>
     {/if}
   </div>
 {/if}
 
 <style>
-  /* Adjust the button style as needed */
   button {
     z-index: 1000;
   }

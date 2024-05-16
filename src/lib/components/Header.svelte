@@ -5,14 +5,18 @@
     import { goto } from '$app/navigation';
     import type { User } from 'firebase/auth';
     import UploadButton from './UploadButton.svelte';
-    import { currentPage } from '../../stores/page';
+    import { currentPage, updateCurrentPage } from '../../stores/page';
     import { onMount } from 'svelte';
   
     let currentUser: User | null = null;
-    
+  
     // Auto-subscribe to the user store
     $: currentUser = $user;
-    
+  
+    onMount(() => {
+      updateCurrentPage(window.location.pathname); // Update the currentPage store based on the current URL
+    });
+  
     async function handleLogout() {
       await signOut(auth);
       goto('/');
@@ -72,8 +76,6 @@
         </a>
       {/if}
     </div>
-  
-    <p class="max-w-md pb-[50px] text-sm text-slate-500 sm:pb-0 mt-[50px] hidden lg:block">© 2024 Alex Chin. Design inspired by <a href="https://github.com/bchiang7" class="hover:underline">Brittany Chiang</a></p>
   </header>
   
   <style>
