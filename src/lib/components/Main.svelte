@@ -17,7 +17,7 @@
     images: Image[];
     subfolders: Folder[];
   };
- 
+
   let folders: Folder[] = [];
   let selectedImage: string = '';
   let isModalOpen: boolean = false;
